@@ -7,7 +7,7 @@ setup(
         name='salary-timetracker',
         version=timetracker.__version__,
         description='A simple and easy timetracker for loging working hours and automatic wage calculation.',
-        long_description=open(join(dirname(__file__), 'README.md')).read(),
+        long_description=open(join(dirname(__file__), 'README.rst')).read(),
         license='GPL',
         packages=find_packages(),
         entry_points={
