@@ -16,13 +16,13 @@ class TimeTracker(object):
     def __init__(self, args):
         root_dir = self.get_git_root()
         self.config = self.get_config()
-        self.filename = os.path.join(root_dir, self.config['trackfile_name'])
+        filename = os.path.join(root_dir, self.config['trackfile_name'])
         if args.summary:
-            summary = self.get_summary(self.filename)
+            summary = self.get_summary(filename)
             sys.exit(summary)
         else:
-            self.minutes, self.comment = args.minutes, args.comments
-
+            self.minutes, self.comment, self.filename = (args.minutes, 
+                    args.comments, filename)
 
     def defaults(self):
         '''
@@ -35,6 +35,7 @@ class TimeTracker(object):
                 'default_comment': '',
                 'date_format': '%d %b %Y', 
                 'time_format': '%H:%M',
+                'csv_delimiter': ',',
                 }
 
     def get_config(self):
@@ -107,7 +108,7 @@ class TimeTracker(object):
         data = self.collect_data()
         new = not os.path.isfile(self.filename)
         with open(self.filename, 'a+') as f:
-            writer = csv.writer(f, delimiter=',')
+            writer = csv.writer(f, delimiter=self.config['csv_delimiter'])
             if new:
                 header =('Date', 'Start', 'End', 'Comment', 'Hour(s)')
                 writer.writerow(header)

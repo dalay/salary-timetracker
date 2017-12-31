@@ -66,6 +66,7 @@ to have the following format:
     default_comment = '' # comment when adding time
     date_format = '%d %b %Y'
     time_format = '%H:%M'
+    csv_delimiter =','
 
 Examples
 --------
