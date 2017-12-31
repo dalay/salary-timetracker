@@ -43,20 +43,24 @@ class TimeTracker(object):
         Get the current configuration of the application, 
         depending on the user settings.
         '''
-        defaults = self.defaults()
+        config = self.defaults()
         user_config = os.path.join(os.path.expanduser("~"),
                 CONFIG_ROOT, CONGIFILE_NAME)
         config_file = user_config if os.path.isfile(user_config) else None
         if config_file:
             user_config = configparser.ConfigParser()
             user_config.read(config_file)
-            if 'main' in user_config.sections():
-                new_conf = user_config['main']
-                config = {}
-                for k, v in defaults.items():
-                    config[k] = new_conf.get(k, v)
-                return config
-        return defaults
+        if 'main' in user_config.sections():
+            new_conf = user_config['main']
+            for k in config.keys():
+                new_value = new_conf.get(k)
+                if new_value:
+                    # Checking a user value for matching  needed type.
+                    try:
+                        config[k] = type(config[k])(new_value)
+                    except ValueError:
+                        continue
+        return config
 
 
     def get_git_root(self):
