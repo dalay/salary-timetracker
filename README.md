@@ -46,7 +46,6 @@ The app settings can be changed through the configuration file, which should be 
 ```ini
 [main]
 # default settings
-trackfile_name = 'timetracking.csv'
 currency = 'USD'
 hourly_rate = 20
 default_comment = '' # comment when adding time

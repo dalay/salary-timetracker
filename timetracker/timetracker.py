@@ -10,13 +10,14 @@ from argparse import ArgumentParser
 
 CONGIFILE_NAME = 'timetracker.conf'
 CONFIG_ROOT = '.config'
+TRACKFILE_NAME = 'timetracker.csv'
 
 class TimeTracker(object):
 
     def __init__(self, args):
         root_dir = self.get_git_root()
         self.config = self.get_config()
-        filename = os.path.join(root_dir, self.config['trackfile_name'])
+        filename = os.path.join(root_dir, TRACKFILE_NAME)
         if args.summary:
             summary = self.get_summary(filename)
             sys.exit(summary)
@@ -29,7 +30,6 @@ class TimeTracker(object):
         Dictionary containing default settings.
         '''
         return {
-                'trackfile_name': 'timetracking.csv',
                 'currency': 'USD',
                 'hourly_rate': 20,
                 'default_comment': '',

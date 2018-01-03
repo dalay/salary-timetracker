@@ -60,7 +60,6 @@ to have the following format:
 
     [main]
     # default settings
-    trackfile_name = 'timetracking.csv'
     currency = 'USD'
     hourly_rate = 20
     default_comment = '' # comment when adding time
