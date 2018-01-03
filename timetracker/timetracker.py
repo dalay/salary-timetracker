@@ -8,44 +8,44 @@ import configparser
 from subprocess import check_output, CalledProcessError
 from argparse import ArgumentParser
 
-CONGIFILE_NAME = 'timetracker.conf'
-CONFIG_ROOT = '.config'
-TRACKFILE_NAME = 'timetracker.csv'
 
 class TimeTracker(object):
 
+    CONGIFILE_NAME = 'timetracker.conf'
+    CONFIG_ROOT = '.config'
+    TRACKFILE_NAME = 'timetracker.csv'
+    defaults = { # Dictionary containing default settings.
+            'currency': 'USD',
+            'hourly_rate': 20,
+            'default_comment': '',
+            'date_format': '%d %b %Y', 
+            'time_format': '%H:%M',
+            'csv_delimiter': ',',
+            }
+
     def __init__(self, args):
+        '''
+        Initializations the git repository, configuration, 
+        and other required the class members.
+        '''
         root_dir = self.get_git_root()
         self.config = self.get_config()
-        filename = os.path.join(root_dir, TRACKFILE_NAME)
+        filename = os.path.join(root_dir, self.TRACKFILE_NAME)
         if args.summary:
             summary = self.get_summary(filename)
             sys.exit(summary)
-        else:
-            self.minutes, self.comment, self.filename = (args.minutes, 
-                    args.comments, filename)
+        self.minutes, self.comment, self.filename = (args.minutes, 
+                args.comments, filename)
 
-    def defaults(self):
-        '''
-        Dictionary containing default settings.
-        '''
-        return {
-                'currency': 'USD',
-                'hourly_rate': 20,
-                'default_comment': '',
-                'date_format': '%d %b %Y', 
-                'time_format': '%H:%M',
-                'csv_delimiter': ',',
-                }
 
     def get_config(self):
         '''
         Get the current configuration of the application, 
         depending on the user settings.
         '''
-        config = self.defaults()
+        config = self.defaults
         user_config = os.path.join(os.path.expanduser("~"),
-                CONFIG_ROOT, CONGIFILE_NAME)
+                self.CONFIG_ROOT, self.CONGIFILE_NAME)
         config_file = user_config if os.path.isfile(user_config) else None
         if config_file:
             user_config = configparser.ConfigParser()
@@ -86,8 +86,13 @@ class TimeTracker(object):
                 for row in reader:
                     hours += float(row[col_index])
                 sum = hours * self.config['hourly_rate']
-                print('Hours worked: {} | Salary: {} {}'.format(
-                    round(hours, 2), int(sum), self.config['currency']))
+                stats_msg = 'Hours worked: {0} | Salary: {1} {2} ({3} {2}/hour)'.format(
+                    round(hours, 2), 
+                    int(sum), 
+                    self.config['currency'], 
+                    self.config['hourly_rate']
+                    )
+                print(stats_msg)
         except FileNotFoundError:
             sys.exit('Data file not found!')
 
