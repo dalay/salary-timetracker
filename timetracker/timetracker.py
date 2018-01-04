@@ -9,6 +9,11 @@ from subprocess import check_output, CalledProcessError
 from argparse import ArgumentParser
 
 
+STATS_EXIT_CODE = 11
+ENTRY_ADDED_EXIT_CODE = 22
+TRACK_FILE_NOTFOUND_EXIT_CODE = 33
+
+
 class TimeTracker(object):
 
     CONGIFILE_NAME = 'timetracker.conf'
@@ -33,7 +38,9 @@ class TimeTracker(object):
         filename = os.path.join(root_dir, self.TRACKFILE_NAME)
         if args.summary:
             summary = self.get_summary(filename)
-            sys.exit(summary)
+            print(summary)
+            sys.exit(STATS_EXIT_CODE)
+
         self.minutes, self.comment, self.filename = (args.minutes, 
                 args.comments, filename)
 
@@ -50,16 +57,15 @@ class TimeTracker(object):
         if config_file:
             user_config = configparser.ConfigParser()
             user_config.read(config_file)
-        if 'main' in user_config.sections():
-            new_conf = user_config['main']
-            for k in config.keys():
-                new_value = new_conf.get(k)
-                if new_value:
-                    # Checking a user value for matching  needed type.
-                    try:
-                        config[k] = type(config[k])(new_value)
-                    except ValueError:
-                        continue
+            if 'main' in user_config.sections():
+                new_conf = user_config['main']
+                for k in config.keys():
+                    new_value = new_conf.get(k)
+                    if new_value:
+                        # Checking a user value for matching  needed type.
+                        try:
+                            config[k] = type(config[k])(new_value)
+                        except ValueError: continue
         return config
 
 
@@ -92,9 +98,10 @@ class TimeTracker(object):
                     self.config['currency'], 
                     self.config['hourly_rate']
                     )
-                print(stats_msg)
+                return stats_msg
         except FileNotFoundError:
-            sys.exit('Data file not found!')
+            print('Data file not found!')
+            sys.exit(TRACK_FILE_NOTFOUND_EXIT_CODE)
 
     def collect_data(self):
         '''
@@ -123,6 +130,7 @@ class TimeTracker(object):
                 writer.writerow(header)
             writer.writerow(data)
             print('Data was successfully added')
+        sys.exit(ENTRY_ADDED_EXIT_CODE)
 
 
 

@@ -10,6 +10,7 @@ setup(
         long_description=open(join(dirname(__file__), 'README.rst')).read(),
         license='GPL',
         packages=find_packages(),
+        test_suite='tests',
         entry_points={
             'console_scripts': [
                 'tt = timetracker:main',
