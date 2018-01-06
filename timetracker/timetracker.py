@@ -15,11 +15,15 @@ TRACK_FILE_NOTFOUND_EXIT_CODE = 33
 
 
 class TimeTracker(object):
+    '''
+    The class is created for more convenient management of 
+    process of time tracking.
+    '''
 
     CONGIFILE_NAME = 'timetracker.conf'
     CONFIG_ROOT = '.config'
     TRACKFILE_NAME = 'timetracker.csv'
-    defaults = { # Dictionary containing default settings.
+    DEFAULTS = { # Dictionary containing default settings.
             'currency': 'USD',
             'hourly_rate': 20,
             'default_comment': '',
@@ -50,7 +54,7 @@ class TimeTracker(object):
         Get the current configuration of the application, 
         depending on the user settings.
         '''
-        config = self.defaults
+        config = self.DEFAULTS
         user_config = os.path.join(os.path.expanduser("~"),
                 self.CONFIG_ROOT, self.CONGIFILE_NAME)
         config_file = user_config if os.path.isfile(user_config) else None
