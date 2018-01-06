@@ -19,26 +19,31 @@ class TimeTrackerTestCase(TestCase):
     def setUpClass(cls):
         cls.parser = timetracker.create_parser()
         cls.basepath = os.path.dirname(os.path.abspath(__file__))
+        cls.cmd_args = {
+                'summary': ('-s',),
+                'summary_log': ('--summary',),
+                'write_log': ('log', '30', 'some comment...'),
+                }
 
-    def get_tt_object_with_args(self, *args):
+    def get_tt_object_with_args(self, args):
         '''
         Creating an object for testing.
         '''
-        args = self.parser.parse_args([*args])
+        args = self.parser.parse_args(args)
         return TimeTrackerTest(args)
 
     def test_getting_stats(self):
         '''
         Check the summary based on previously recorded data.
         '''
-        tt = self.get_tt_object_with_args('log', '30', 'some comment...')
+        tt = self.get_tt_object_with_args(self.cmd_args['write_log'])
         with self.assertRaises(SystemExit) as se:
-            self.get_tt_object_with_args('-s')
+            self.get_tt_object_with_args(self.cmd_args['summary'])
             self.assertEqual(se.exception.code, timetracker.TRACK_FILE_NOTFOUND_EXIT_CODE)
         with self.assertRaises(SystemExit) as se:
             tt.write_data()
             self.assertEqual(se.exception.code, timetracker.ENTRY_ADDED_EXIT_CODE)
-            self.get_tt_object_with_args('-s')
+            self.get_tt_object_with_args(self.cmd_args['summary'])
             self.assertEqual(se.exception.code, timetracker.STATS_EXIT_CODE)
         os.remove(tt.filename)
 
@@ -46,7 +51,7 @@ class TimeTrackerTestCase(TestCase):
         '''
         Verify the correctness of the resulting path for the data file.
         '''
-        tt = self.get_tt_object_with_args('log', '30', 'some comment...')
+        tt = self.get_tt_object_with_args(self.cmd_args['write_log'])
         track_file_path = '%s/%s' % (self.basepath, tt.TRACKFILE_NAME)
         self.assertEqual(track_file_path, tt.filename)
 
@@ -54,7 +59,7 @@ class TimeTrackerTestCase(TestCase):
         '''
         Verify the addition of a record.
         '''
-        tt = self.get_tt_object_with_args('log', '30', 'some comment...')
+        tt = self.get_tt_object_with_args(self.cmd_args['write_log'])
         track_file_path = '%s/%s' % (self.basepath, tt.TRACKFILE_NAME)
         self.assertEqual(os.path.isfile(track_file_path), False)
         with self.assertRaises(SystemExit) as se:
