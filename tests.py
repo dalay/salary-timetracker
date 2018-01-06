@@ -69,6 +69,9 @@ class TimeTrackerTestCase(TestCase):
         os.remove(track_file_path)
 
     def test_entry_added(self):
+        '''
+        Data writing check.
+        '''
         text = 'bla-bla comment'
         cmd_args = ('log', '60', text)
         tt = self.get_tt_object_with_args(cmd_args)
@@ -76,3 +79,4 @@ class TimeTrackerTestCase(TestCase):
             tt.write_data()
         with open(tt.filename, 'r') as f:
             self.assertIn(text, f.read())
+        os.remove(tt.filename)
