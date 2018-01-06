@@ -67,3 +67,12 @@ class TimeTrackerTestCase(TestCase):
             self.assertEqual(se.exception.code, timetracker.ENTRY_ADDED_EXIT_CODE)
         self.assertEqual(os.path.isfile(track_file_path), True)
         os.remove(track_file_path)
+
+    def test_entry_added(self):
+        text = 'bla-bla comment'
+        cmd_args = ('log', '60', text)
+        tt = self.get_tt_object_with_args(cmd_args)
+        with self.assertRaises(SystemExit):
+            tt.write_data()
+        with open(tt.filename, 'r') as f:
+            self.assertIn(text, f.read())
