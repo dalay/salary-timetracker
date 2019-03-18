@@ -36,21 +36,20 @@ class TimeTracker(object):
         '''
         root_dir = self.get_git_root()
         self.config = self.get_config()
-        filename = os.path.join(root_dir, self.TRACKFILE_NAME)
+        self.trackfile = os.path.join(root_dir, self.TRACKFILE_NAME)
         if args.summary:
-            summary = self.get_summary(filename)
+            summary = self.get_summary()
             print(summary)
             sys.exit(STATS_EXIT_CODE)
         elif args.show_table:
-            table = self.make_prettytable(filename)
+            table = self.make_prettytable()
             print(table)
             sys.exit(STATS_EXIT_CODE)
 
-        self.minutes, self.comment, self.filename = (args.minutes,
-                                                     args.comments, filename)
+        self.minutes, self.comment = (args.minutes, args.comments)
 
-    def make_prettytable(self, filename):
-        with open(filename, "r") as fp:
+    def make_prettytable(self):
+        with open(self.trackfile, "r") as fp:
             table = from_csv(fp)
         table.align = 'l'
         return table
@@ -90,12 +89,12 @@ class TimeTracker(object):
                 'ERROR! At the moment you are not inside a git-repository!\nThe app finishes its work..')
         return base.decode('utf-8').strip()
 
-    def get_summary(self, filename, col_index=4):
+    def get_summary(self, col_index=4):
         '''
         Geting statistics on time spent and money earned.
         '''
         try:
-            with open(filename, 'r') as f:
+            with open(self.trackfile, 'r') as f:
                 reader = csv.reader(f)
                 next(reader)  # Skip header
                 hours = 0
@@ -154,8 +153,8 @@ class TimeTracker(object):
         Write data to the tracking log.
         '''
         data = self.collect_data()
-        new = not os.path.isfile(self.filename)
-        with open(self.filename, 'a+') as f:
+        new = not os.path.isfile(self.trackfile)
+        with open(self.trackfile, 'a+') as f:
             writer = csv.writer(f, delimiter=self.config['csv_delimiter'])
             if new:
                 header = ('Date', 'Start', 'End', 'Comment', 'Hour(s)')
@@ -167,7 +166,7 @@ class TimeTracker(object):
 
 def get_log_from_input():
     '''
-    If an application is invoked without any arguments, 
+    If an application is invoked without any arguments,
     the data for a log is retrieved through an interactive session.
     '''
     while True:
@@ -182,7 +181,7 @@ def get_log_from_input():
 
 def create_parser():
     '''
-    Creating a parser for an allowed arguments when calling the app 
+    Creating a parser for an allowed arguments when calling the app
     through a command line interface.
     '''
     parser = ArgumentParser()
