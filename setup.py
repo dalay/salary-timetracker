@@ -1,11 +1,11 @@
 from os.path import join, dirname
 from setuptools import setup, find_packages
-import timetracker
+from timetracker import __version__
 
 
 setup(
     name='salary-timetracker',
-    version=timetracker.__version__,
+    version=__version__,
     description='A simple and easy timetracker for loging working hours and automatic wage calculation.',
     long_description=open(join(dirname(__file__), 'README.rst')).read(),
     license='GPL',
@@ -20,6 +20,8 @@ setup(
     author='Alexandr Jurow',
     author_email='pythonwayru@gmail.com',
     url='http://github.com/dalay/salary-timetracker',
+    download_url='https://github.com/dalay/salary-timetracker/archive/v{}.tar.gz'.format(
+        __version__),
     keywords=['timetracker', 'salary', 'freelance'],
     install_requires=['prettytable'],
     classifiers=[
