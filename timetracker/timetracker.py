@@ -5,6 +5,7 @@ import time
 import os
 import csv
 import configparser
+from functools import lru_cache
 from subprocess import check_output, CalledProcessError
 from argparse import ArgumentParser
 from prettytable import from_csv
@@ -13,6 +14,11 @@ from prettytable import from_csv
 STATS_EXIT_CODE = 11
 ENTRY_ADDED_EXIT_CODE = 22
 TRACK_FILE_NOTFOUND_EXIT_CODE = 33
+
+
+def file_not_found_action():
+    print('Data file not found!')
+    sys.exit(TRACK_FILE_NOTFOUND_EXIT_CODE)
 
 
 class TimeTracker(object):
@@ -49,21 +55,34 @@ class TimeTracker(object):
         self.minutes, self.comment = (args.minutes, args.comments)
 
     def make_prettytable(self):
-        with open(self.trackfile, "r") as fp:
-            table = from_csv(fp)
-        table.align = 'l'
-        return table
+        try:
+            with open(self.trackfile, "r") as fp:
+                table = from_csv(fp)
+        except FileNotFoundError:
+            file_not_found_action()
+        else:
+            table.align = 'l'
+            return table
 
+    @lru_cache(maxsize=30)
     def get_config(self):
         '''
         Get the current configuration of the application,
         depending on the user settings.
         '''
         config = self.defaults
+        # Config from the git project dir
+        project_config = os.path.join(self.get_git_root(), self.CONGIFILE_NAME)
+        # Config from the user conf dir
         user_config = os.path.join(os.path.expanduser("~"),
                                    self.CONFIG_ROOT, self.CONGIFILE_NAME)
-        config_file = user_config if os.path.isfile(user_config) else None
-        if config_file:
+        config_file = None
+        for conf in (project_config, user_config):
+            if os.path.isfile(conf):
+                config_file = conf
+                break
+
+        if config_file is not None:
             user_config = configparser.ConfigParser()
             user_config.read(config_file)
             if 'main' in user_config.sections():
@@ -109,8 +128,7 @@ class TimeTracker(object):
                 )
                 return stats_msg
         except FileNotFoundError:
-            print('Data file not found!')
-            sys.exit(TRACK_FILE_NOTFOUND_EXIT_CODE)
+            file_not_found_action()
 
     def collect_data(self):
         '''
