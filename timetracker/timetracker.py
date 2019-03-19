@@ -40,9 +40,9 @@ class TimeTracker(object):
         Initializations the git repository, configuration,
         and other required the class members.
         '''
-        root_dir = self.get_git_root()
         self.config = self.get_config()
-        self.trackfile = os.path.join(root_dir, self.TRACKFILE_NAME)
+        self.trackfile = os.path.join(self.get_git_root(), self.TRACKFILE_NAME)
+
         if args.summary:
             summary = self.get_summary()
             print(summary)
@@ -54,23 +54,23 @@ class TimeTracker(object):
 
         self.minutes, self.comment = (args.minutes, args.comments)
 
-    def make_prettytable(self):
-        try:
-            with open(self.trackfile, "r") as fp:
-                table = from_csv(fp)
-        except FileNotFoundError:
-            file_not_found_action()
-        else:
-            table.align = 'l'
-            return table
-
     @lru_cache(maxsize=30)
     def get_config(self):
         '''
         Get the current configuration of the application,
         depending on the user settings.
+
+        Config file example:
+        [main]
+        currency = USD
+        hourly_rate = 20
+        default_comment = ''
+        date_format = '%d %b %Y'
+        time_format = '%H:%M'
+        csv_delimiter = ','
         '''
         config = self.defaults
+
         # Config from the git project dir
         project_config = os.path.join(self.get_git_root(), self.CONGIFILE_NAME)
         # Config from the user conf dir
@@ -96,6 +96,16 @@ class TimeTracker(object):
                         except ValueError:
                             continue
         return config
+
+    def make_prettytable(self):
+        try:
+            with open(self.trackfile, "r") as fp:
+                table = from_csv(fp)
+        except FileNotFoundError:
+            file_not_found_action()
+        else:
+            table.align = 'l'
+            return table
 
     def get_git_root(self):
         '''
