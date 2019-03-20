@@ -8,6 +8,7 @@ from functools import lru_cache
 from subprocess import check_output, CalledProcessError
 from argparse import ArgumentParser
 from .db_router import get_db_driver
+from . import __version__
 
 
 STATS_EXIT_CODE = 11
@@ -49,6 +50,9 @@ class TimeTracker(object):
             sys.exit(STATS_EXIT_CODE)
         elif args.create_config:
             self.create_configfile_in_rootdir()
+            sys.exit(STATS_EXIT_CODE)
+        elif args.version:
+            print('Current version is %s' % __version__)
             sys.exit(STATS_EXIT_CODE)
 
         self.minutes, self.comment = (args.minutes, args.comments)
@@ -202,6 +206,8 @@ def create_parser():
     through a command line interface.
     '''
     parser = ArgumentParser()
+    parser.add_argument('-v', '--version', action='store_true',
+                        help='Show version')
     parser.add_argument('-s', '--summary', action='store_true',
                         help='Show summary.')
     parser.add_argument('-t', '--show-table', action='store_true',
