@@ -75,7 +75,6 @@ class DbCsv(Db):
                 header = [s.capitalize() for s in data.keys()]
                 writer.writerow(header)
             writer.writerow(data.values())
-            print('Data was successfully added')
         sys.exit(ENTRY_ADDED_EXIT_CODE)
 
     def get_summary(self, col_index=4):

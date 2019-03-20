@@ -18,12 +18,14 @@ class TimeTracker(object):
     CONGIFILE_NAME = 'timetracker.conf'
     CONFIG_ROOT = '.config'
     TRACKFILE_NAME = 'timetracker.csv'
+
     defaults = {  # Dictionary containing default settings.
         'currency': 'USD',
         'hourly_rate': 20,
         'default_comment': '',
         'date_format': '%d %b %Y',
         'time_format': '%H:%M',
+        'db_driver': 'csv',
         'csv_delimiter': ',',
     }
 
@@ -33,8 +35,9 @@ class TimeTracker(object):
         and other required the class members.
         '''
         self.config = self.get_config()
-        self.trackfile = os.path.join(self.get_git_root(), self.TRACKFILE_NAME)
-        self.db = get_db_driver(self.config)
+        self.project_dir = self.get_git_root()
+        self.trackfile = os.path.join(self.project_dir, self.TRACKFILE_NAME)
+        self._db = get_db_driver(self.config)
 
         if args.summary:
             summary = self.get_summary()
@@ -43,6 +46,9 @@ class TimeTracker(object):
         elif args.show_table:
             table = self.make_prettytable()
             print(table)
+            sys.exit(STATS_EXIT_CODE)
+        elif args.create_config:
+            self.create_configfile_in_rootdir()
             sys.exit(STATS_EXIT_CODE)
 
         self.minutes, self.comment = (args.minutes, args.comments)
@@ -60,6 +66,7 @@ class TimeTracker(object):
         default_comment = ''
         date_format = '%d %b %Y'
         time_format = '%H:%M'
+        db_driver = 'csv'
         csv_delimiter = ','
         '''
         config = self.defaults
@@ -90,8 +97,19 @@ class TimeTracker(object):
                             continue
         return config
 
+    def create_configfile_in_rootdir(self):
+        if os.path.exists(self.trackfile):
+            sys.exit('At the moment there is already data recorded in accordance with the settings of another configuration file. Creating a new settings file may damage this data and therefore the operation is canceled.')
+        conf_path = os.path.join(self.project_dir, self.CONGIFILE_NAME)
+        if not os.path.exists(conf_path):
+            config = configparser.ConfigParser()
+            config['main'] = {k: str(v).replace('%', '%%')
+                              for k, v in self.config.items()}
+            with open(conf_path, 'w') as f:
+                config.write(f)
+
     def make_prettytable(self):
-        return self.db.make_prettytable()
+        return self._db.make_prettytable()
 
     def get_git_root(self):
         '''
@@ -114,7 +132,8 @@ class TimeTracker(object):
             self.config['time_format'], start_datetime)
         log_end_time = time.strftime(
             self.config['time_format'], time.localtime())
-        log_comment = (''.join(self.comment)) or self.config['default_comment']
+        # log_comment = (''.join(self.comment)) or self.config['default_comment']
+        log_comment = ''
         log_hours = '%.1f' % (self.minutes / 60)
 
         # Dict: Column Header -> Column Data
@@ -127,6 +146,8 @@ class TimeTracker(object):
         }
 
     def format_comment(self, comment, max_line_length):
+        if not comment:
+            return
         # accumulated line length
         line_length = 0
         words = comment.split(" ")
@@ -150,13 +171,13 @@ class TimeTracker(object):
         Write data to the tracking log.
         '''
         data = self.collect_data()
-        self.db.write_data(data)
+        self._db.write_data(data)
 
     def get_summary(self):
         '''
         Geting statistics on time spent and money earned.
         '''
-        return self.db.get_summary()
+        return self._db.get_summary()
 
 
 def get_log_from_input():
@@ -166,11 +187,12 @@ def get_log_from_input():
     '''
     while True:
         minutes = input(
-            "Enter the working time (in minutes, Ctrl-C for cancel): ")
+            "Enter the working time (in minutes, Ctrl-C for cancel): ").strip()
         if not minutes.isdigit():
             print("No minutes have been entered. Try once more...")
             continue
         comment = input('Comment on the entry: ') or None
+        print('Data was successfully added: Minutes - {}, Comment - {}'.format(minutes, comment))
         return [minutes, comment]
 
 
@@ -184,6 +206,8 @@ def create_parser():
                         help='Show summary.')
     parser.add_argument('-t', '--show-table', action='store_true',
                         help='Show entries as formatted table(prettytable).')
+    parser.add_argument('--create-config', action='store_true',
+                        help='Create a configuration file with default settings in the project directory.')
     subparsers = parser.add_subparsers()
 
     log_parser = subparsers.add_parser('log',
