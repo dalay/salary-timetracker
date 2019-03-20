@@ -136,17 +136,15 @@ class TimeTracker(object):
             self.config['time_format'], start_datetime)
         log_end_time = time.strftime(
             self.config['time_format'], time.localtime())
-        # log_comment = (''.join(self.comment)) or self.config['default_comment']
-        log_comment = ''
-        log_hours = '%.1f' % (self.minutes / 60)
+        log_comment = self.comment
+        log_minutes = self.minutes
 
-        # Dict: Column Header -> Column Data
         return {
             'date': log_date,
             'start': log_start_time,
             'end': log_end_time,
             'comment': self.format_comment(log_comment, 60),
-            'hours': log_hours
+            'minutes': log_minutes
         }
 
     def format_comment(self, comment, max_line_length):
@@ -184,20 +182,26 @@ class TimeTracker(object):
         return self._db.get_summary()
 
 
-def get_log_from_input():
-    '''
-    If an application is invoked without any arguments,
-    the data for a log is retrieved through an interactive session.
-    '''
+def get_minutes_from_input():
     while True:
         minutes = input(
             "Enter the working time (in minutes, Ctrl-C for cancel): ").strip()
         if not minutes.isdigit():
             print("No minutes have been entered. Try once more...")
             continue
-        comment = input('Comment on the entry: ') or None
-        print('Data was successfully added: Minutes - {}, Comment - {}'.format(minutes, comment))
-        return [minutes, comment]
+        return minutes
+
+
+def get_comment_from_input():
+    return input('Comment on the entry: ')
+
+
+def get_log_from_input():
+    '''
+    If an application is invoked without any arguments,
+    the data for a log is retrieved through an interactive session.
+    '''
+    return [get_minutes_from_input(), get_comment_from_input()]
 
 
 def create_parser():
@@ -221,15 +225,24 @@ def create_parser():
     log_parser.add_argument(
         'minutes', help='Time in minutes spent on work.', type=int)
     log_parser.add_argument(
-        'comments', nargs='*', help='Commens on the work done (optional)')
+        'comments', help='Commens on the work done (optional)')
+    # 'comments', nargs='*', help='Commens on the work done (optional)')
     return parser
 
 
 def parse_args():
-    if len(sys.argv) < 2:
+    sys_argv = sys.argv[1:]
+    if not sys_argv:
         argv = (['log'] + get_log_from_input())
+    elif sys_argv[0].isdigit():
+        argv = ['log'] + [sys_argv[0]]
+        if len(sys_argv) > 1:
+            argv.append(sys_argv[1:])
+        else:
+            argv.append(get_comment_from_input())
     else:
         argv = sys.argv[1:]
+
     parser = create_parser()
     args = parser.parse_args(argv)
     return args

@@ -1,7 +1,10 @@
 import os
 import sys
 import csv
-from prettytable import from_csv
+import time
+import datetime
+import sqlite3
+from prettytable import from_csv, PrettyTable
 from subprocess import check_output, CalledProcessError
 
 TRACKFILE_OR_DB_NAME = 'timetracker'
@@ -65,10 +68,9 @@ class DbCsv(Db):
             self.git_root_dir, '{}.csv'.format(TRACKFILE_OR_DB_NAME))
 
     def write_data(self, data: dict):
-        '''
-        Write data to the tracking log.
-        '''
         new = not os.path.isfile(self.trackfile)
+        hours = (data.pop('minutes') / 60)
+        data['hours'] = '%.1f' % hours
         with open(self.trackfile, 'a+') as f:
             writer = csv.writer(f, delimiter=self.config['csv_delimiter'])
             if new:
@@ -108,4 +110,77 @@ class DbCsv(Db):
 
 
 class DbSqlite(Db):
-    pass
+
+    def __init__(self, config):
+        super().__init__(config)
+        db_name = '%s.sqlite' % TRACKFILE_OR_DB_NAME
+        self.db = os.path.join(self.git_root_dir, db_name)
+        # if not os.path.isfile(self.db):
+        #     self.create_table()
+        self.connect = sqlite3.connect(self.db)
+        self.cursor = self.connect.cursor()
+        self.create_table()
+
+    def query(self, sql, params=()):
+        q = self.cursor.execute(sql, params)
+        self.connect.commit()
+        return q
+
+    def __del__(self):
+        self.connect.close()
+
+    def create_table(self):
+        sql = '''CREATE TABLE IF NOT EXISTS {}(
+                        timestamp INTEGER PRIMARY KEY NOT NULL,
+                        minutes INTEGER NOT NULL,
+                        comment TEXT NULL)'''.format(TRACKFILE_OR_DB_NAME)
+        self.query(sql)
+
+    def write_data(self, data: dict):
+        minutes = data.get('minutes')
+        comment = data.get('comment')
+        if minutes:
+            sql = 'INSERT INTO {} (timestamp, minutes, comment) VALUES(?, ?, ?)'.format(
+                TRACKFILE_OR_DB_NAME)
+            params = [int(time.time()), int(minutes), comment]
+            self.query(sql, params)
+        else:
+            sys.exit('No data to write')
+        sys.exit(ENTRY_ADDED_EXIT_CODE)
+
+    def make_prettytable(self):
+        sql = "SELECT * FROM {}".format(TRACKFILE_OR_DB_NAME)
+        q = self.query(sql)
+        table = PrettyTable()
+        table.field_names = ['Date', 'Start Time',
+                             'End Time', 'Hours', 'Comment']
+        for ts, minuts, comment in q.fetchall():
+            hours = round((minuts / 60), 1)
+
+            start_ts = (ts - (minuts * 60))
+
+            start_time = datetime.datetime.fromtimestamp(
+                start_ts).strftime('%H:%M')
+            ts_time = datetime.datetime.fromtimestamp(ts)
+            start_date = ts_time.strftime('%d.%m.%y')
+            end_time = ts_time.strftime('%H:%M')
+
+            table.add_row([start_date, start_time, end_time,
+                           hours, comment or ''])
+
+        table.align = 'l'
+        return table
+
+    def get_summary(self):
+        sql = "SELECT SUM(minutes) FROM {}".format(TRACKFILE_OR_DB_NAME)
+        q = self.query(sql)
+        minutes = q.fetchone()[0]
+        hours = (minutes / 60)
+        sum = hours * self.config['hourly_rate']
+        stats_msg = 'Hours worked: {0} | Salary: {1} {2} ({3} {2}/hour)'.format(
+            round(hours, 1),
+            int(sum),
+            self.config['currency'],
+            self.config['hourly_rate']
+        )
+        return stats_msg
